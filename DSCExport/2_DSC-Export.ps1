@@ -53,6 +53,10 @@ param (
     [string]$FileName = "export.ps1"
 )
 
+# Clear any cached connections from previous runs to avoid cross-tenant auth errors
+$Global:MSCloudLoginConnectionProfile = $null
+Disconnect-PnPOnline -ErrorAction SilentlyContinue
+
 # Components aligned with NCSC_M365_Baseline.ps1 blueprint resource types
 Export-M365DSCConfiguration `
     -Components @("AADConditionalAccessPolicy", "AADNamedLocationPolicy", "AADPasswordRuleSettings", "AADTokenLifetimePolicy", "EXOTransportRule", "EXOAntiPhishPolicy", "EXOHostedContentFilterPolicy", "EXOMalwareFilterPolicy", "EXOSafeAttachmentPolicy", "EXOSafeLinksPolicy", "IntuneDeviceCompliancePolicyWindows10", "SPOSharingSettings", "SPOTenantSettings", "SCDLPCompliancePolicy", "SCRetentionCompliancePolicy", "SCLabelPolicy", "TeamsMessagingPolicy") `
