@@ -3,7 +3,7 @@
 param (
 )
 
-Configuration ar-net.biz_min_export
+Configuration arnetbiz_export
 {
     param (
     )
@@ -1637,4 +1637,4 @@ Configuration ar-net.biz_min_export
     }
 }
 
-ar-net.biz_min_export -ConfigurationData .\ConfigurationData.psd1
+arnetbiz_export -ConfigurationData .\ConfigurationData.psd1

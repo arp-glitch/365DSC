@@ -11,9 +11,9 @@
     AppDisplayName = 'M365DSC-Assessment'
 
     # ── Credentials (populated automatically by Step 1) ────────────────────
-    ApplicationId         = 'edb4d3df-6eef-42f4-aa97-c7bb160832a2'
-    TenantId              = '31df26f7-f5bb-4839-9cde-9e3c5589f7b4'
-    TenantDomain          = 'q2bx.onmicrosoft.com'
+    ApplicationId         = 'a474ef76-a8b5-48bc-8c14-f94aa694782e'
+    TenantId              = 'b3f0a9b8-5da5-4eac-acff-83059c4bbf17'
+    TenantDomain          = 'arnetbiz.onmicrosoft.com'
     CertificateThumbprint = '4082F127F3705C7B20353A548FF1882AA6283631'
     CertificatePath       = 'C:\\\\Users\\\\Andre\\\\Git\\\\365DSC\\\\DSCExport\\\\..\\\\Config\\\\M365DSC-Assessment.pfx'
 }
