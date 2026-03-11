@@ -1,0 +1,176 @@
+[
+  {
+    "ResourceAccess": [
+      {
+        "Id": "594c1fb6-4f81-4475-ae41-0c394909246c",
+        "Type": "Role"
+      },
+      {
+        "Id": "e2cea78f-e743-4d8f-a16a-75b629a038ae",
+        "Type": "Role"
+      }
+    ],
+    "ResourceAppId": "c5393580-f805-4401-95e8-94b7a6ef2fc2",
+    "AdditionalProperties": {}
+  },
+  {
+    "ResourceAccess": [
+      {
+        "Id": "ea8291d3-4b9a-44b5-bc3a-6cea3026dc79",
+        "Type": "Role"
+      }
+    ],
+    "ResourceAppId": "fc780465-2017-40d4-a0c5-307022471b92",
+    "AdditionalProperties": {}
+  },
+  {
+    "ResourceAccess": [
+      {
+        "Id": "df021288-bdef-4463-88db-98f22de89214",
+        "Type": "Role"
+      },
+      {
+        "Id": "7ab1d382-f21e-4acd-a863-ba3e13f7da61",
+        "Type": "Role"
+      },
+      {
+        "Id": "498476ce-e0fe-48b0-b801-37ba7e2685c6",
+        "Type": "Role"
+      },
+      {
+        "Id": "bf394140-e372-4bf9-a898-299cfc7564e5",
+        "Type": "Role"
+      },
+      {
+        "Id": "45cc0394-e837-488b-a098-1918f48d186c",
+        "Type": "Role"
+      },
+      {
+        "Id": "197ee4e9-b993-4066-898f-d6aecc55125b",
+        "Type": "Role"
+      },
+      {
+        "Id": "dd98c7f5-2d42-42d3-a0e4-633161547251",
+        "Type": "Role"
+      },
+      {
+        "Id": "f8f035bb-2cce-47fb-8bf5-7baf3ecbee48",
+        "Type": "Role"
+      },
+      {
+        "Id": "dc5007c0-2d7d-4c42-879c-2dab87571379",
+        "Type": "Role"
+      },
+      {
+        "Id": "6e472fd1-ad78-48da-a0f0-97ab2c6b769e",
+        "Type": "Role"
+      },
+      {
+        "Id": "246dd0d5-5bd0-4def-940b-0421030a5b68",
+        "Type": "Role"
+      },
+      {
+        "Id": "483bed4a-2ad3-4361-a73b-c83ccdbdc53c",
+        "Type": "Role"
+      },
+      {
+        "Id": "38d9df27-64da-44fd-b7c5-a6fbac20248f",
+        "Type": "Role"
+      },
+      {
+        "Id": "d07a8cc0-3d51-4b77-b3b0-32704d1f69fa",
+        "Type": "Role"
+      },
+      {
+        "Id": "2f51be20-0bb4-4fed-bf7b-db946066c75e",
+        "Type": "Role"
+      },
+      {
+        "Id": "dc377aa6-52d8-4e23-b271-2a7ae04cedf3",
+        "Type": "Role"
+      },
+      {
+        "Id": "8a3d36bf-cb46-4bcc-bec9-8d92829dab84",
+        "Type": "Role"
+      },
+      {
+        "Id": "9a5d68dd-52b0-4cc2-bd40-abcf44ac3a30",
+        "Type": "Role"
+      },
+      {
+        "Id": "b0afded3-3588-46d8-8b3d-9842eff778da",
+        "Type": "Role"
+      },
+      {
+        "Id": "230c1aed-a721-4c5d-9cb4-a90514e508ef",
+        "Type": "Role"
+      },
+      {
+        "Id": "332a536c-c7ef-4017-ab91-336970924f0d",
+        "Type": "Role"
+      },
+      {
+        "Id": "01d4889c-1287-42c6-ac1f-5d1e02578ef6",
+        "Type": "Role"
+      },
+      {
+        "Id": "1914711b-a1cb-4793-b019-c2ce0ed21b8c",
+        "Type": "Role"
+      },
+      {
+        "Id": "b9bb2381-47a4-46cd-aafb-00cb12f68504",
+        "Type": "Role"
+      },
+      {
+        "Id": "a82116e5-55eb-4c41-a434-62fe8a61c773",
+        "Type": "Role"
+      },
+      {
+        "Id": "6e98f277-b046-4193-a4f2-6bf6a78cd491",
+        "Type": "Role"
+      },
+      {
+        "Id": "b528084d-ad10-4598-8b93-929746b4d7d6",
+        "Type": "Role"
+      },
+      {
+        "Id": "9709bb33-4549-49d4-8ed9-a8f65e45bb0f",
+        "Type": "Role"
+      },
+      {
+        "Id": "57f1cf28-c0c4-4ec3-9a30-19a2eaaf2f6e",
+        "Type": "Role"
+      },
+      {
+        "Id": "19da66cb-0fb0-4390-b071-ebc76a349482",
+        "Type": "Role"
+      },
+      {
+        "Id": "c9090d00-6101-42f0-a729-c41074260d47",
+        "Type": "Role"
+      }
+    ],
+    "ResourceAppId": "00000003-0000-0000-c000-000000000000",
+    "AdditionalProperties": {}
+  },
+  {
+    "ResourceAccess": [
+      {
+        "Id": "dc50a0fb-09a3-484d-be87-e023b12c6440",
+        "Type": "Role"
+      }
+    ],
+    "ResourceAppId": "00000002-0000-0ff1-ce00-000000000000",
+    "AdditionalProperties": {}
+  },
+  {
+    "ResourceAccess": [
+      {
+        "Id": "678536fe-1083-478a-9c59-b99265e6b0d3",
+        "Type": "Role"
+      }
+    ],
+    "ResourceAppId": "00000003-0000-0ff1-ce00-000000000000",
+    "AdditionalProperties": {}
+  }
+]

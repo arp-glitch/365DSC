@@ -1,0 +1,17 @@
+# Exports, Reports, compiled MOFs, and logs are per-run artifacts.
+# They should not be committed to source control.
+Exports/
+Reports/
+MOF/
+Logs/
+
+# Certificate private keys must never be committed
+Config/*.pfx
+Config/*.cer
+
+# Temp / OS
+*.tmp
+Thumbs.db
+.DS_Store
+~$*.docx
+*.log

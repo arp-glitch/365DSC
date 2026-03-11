@@ -1,0 +1,234 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# M365DSC NCSC Audit Pipeline – Azure DevOps Pipeline
+# ─────────────────────────────────────────────────────────────────────────────
+# This pipeline runs the assessment or remediation against a client tenant.
+# Updated: 2026-03-02 — uses -Scope AllUsers to avoid dual-install CIM errors,
+# remediation stage applies MOF via CIM/DCOM (no WinRM dependency),
+# client-specific TrustedIpRanges injected from TRUSTED_IP_RANGES variable.
+#
+# Prerequisites:
+#   1. Variable Group "M365DSC-Credentials" in Azure DevOps Library with:
+#        - APP_ID              (App Registration Client Id)
+#        - TENANT_ID           (Target tenant GUID)
+#        - TENANT_DOMAIN       (Target tenant .onmicrosoft.com domain, e.g. contoso.onmicrosoft.com)
+#        - CERT_THUMBPRINT     (Certificate thumbprint)
+#        - CERT_PFX_BASE64     (Base64-encoded .pfx file — secret)
+#        - CERT_PASSWORD        (PFX password — secret)
+#        - TRUSTED_IP_RANGES   (Comma-separated client CIDR ranges, e.g. 81.2.69.0/24,203.0.113.0/28)
+#   2. The self-hosted agent (or Microsoft-hosted) must have:
+#        - PowerShell 7.x+ (7.5+ recommended)
+#        - Dependencies are installed automatically by the Setup step
+#        - Agent must run elevated (Administrator) for the Remediate stage
+# ─────────────────────────────────────────────────────────────────────────────
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - 365DSC/Blueprints/**
+      - 365DSC/Scripts/**
+
+pr:
+  branches:
+    include:
+      - main
+
+parameters:
+  - name: mode
+    displayName: 'Pipeline Mode'
+    type: string
+    default: 'AssessOnly'
+    values:
+      - AssessOnly
+      - AssessAndRemediate
+
+  - name: clientName
+    displayName: 'Client Name (for report branding)'
+    type: string
+    default: 'CLIENT_NAME'
+
+variables:
+  - group: M365DSC-Credentials
+  - name: pipelineRoot
+    value: '$(Build.SourcesDirectory)/365DSC'
+
+pool:
+  vmImage: 'windows-latest'       # Use self-hosted if you have the cert in the store
+
+stages:
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Stage 1: Assessment
+  # ═══════════════════════════════════════════════════════════════════════════
+  - stage: Assess
+    displayName: 'NCSC Assessment'
+    jobs:
+      - job: RunAssessment
+        displayName: 'Export & Compare'
+        steps:
+          - pwsh: |
+              Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+              
+              # Use -Scope AllUsers to keep a single module copy and avoid
+              # dual-install CIM class duplication errors.
+              $Modules = @(
+                'Microsoft365DSC'
+                'Microsoft.Graph.Authentication'
+                'Microsoft.Graph.Applications'
+                'ExchangeOnlineManagement'
+              )
+              
+              foreach ($Mod in $Modules) {
+                  Write-Host "Installing $Mod..."
+                  Install-Module -Name $Mod -Scope AllUsers -Force -AllowClobber
+              }
+              
+              Write-Host "Microsoft365DSC version:"
+              Get-Module Microsoft365DSC -ListAvailable | Select-Object Version
+              
+              # Install M365DSC dependencies from manifest
+              $m365Path = (Get-Module Microsoft365DSC -ListAvailable | Select-Object -First 1).ModuleBase
+              $manifest = Import-PowerShellDataFile "$m365Path\Dependencies\Manifest.psd1"
+              foreach ($dep in $manifest.Dependencies) {
+                  Write-Host "Installing $($dep.ModuleName) v$($dep.RequiredVersion)..."
+                  Install-Module -Name $dep.ModuleName -RequiredVersion $dep.RequiredVersion `
+                      -Force -AllowClobber -Scope AllUsers -ErrorAction SilentlyContinue
+              }
+              
+              # Install PSDesiredStateConfiguration (required on PS7)
+              Install-Module PSDesiredStateConfiguration -RequiredVersion 2.0.7 -Force -AllowPrerelease -Scope AllUsers -ErrorAction SilentlyContinue
+              
+              # Install Az modules (hidden runtime dependency)
+              @('Az.Accounts','Az.ResourceGraph','Az.Resources','Az.Security','Az.SecurityInsights') | ForEach-Object {
+                  Write-Host "Installing $_..."
+                  Install-Module -Name $_ -Force -AllowClobber -Scope AllUsers -ErrorAction SilentlyContinue
+              }
+            displayName: 'Install PowerShell Modules'
+
+          # Import the certificate into BOTH stores:
+          #   - CurrentUser\My  → used by Scripts 1 & 2 (export/assessment, runs as agent user)
+          #   - LocalMachine\My → used by Script 3 (remediation, LCM runs as SYSTEM)
+          - pwsh: |
+              $PfxBytes    = [System.Convert]::FromBase64String('$(CERT_PFX_BASE64)')
+              $PfxPath     = Join-Path $env:TEMP 'M365DSC-Auth.pfx'
+              [System.IO.File]::WriteAllBytes($PfxPath, $PfxBytes)
+              
+              $SecurePass = ConvertTo-SecureString '$(CERT_PASSWORD)' -AsPlainText -Force
+              Import-PfxCertificate -FilePath $PfxPath -CertStoreLocation 'Cert:\CurrentUser\My' `
+                  -Password $SecurePass | Out-Null
+              Import-PfxCertificate -FilePath $PfxPath -CertStoreLocation 'Cert:\LocalMachine\My' `
+                  -Password $SecurePass | Out-Null
+              
+              Remove-Item $PfxPath -Force
+              Write-Host "Certificate imported to CurrentUser and LocalMachine: $(CERT_THUMBPRINT)"
+            displayName: 'Import Auth Certificate'
+
+          # Patch the config with pipeline variables
+          - pwsh: |
+              $ConfigPath = "$(pipelineRoot)/Config/M365DSC.Config.psd1"
+              $Content = Get-Content $ConfigPath -Raw
+              $Content = $Content -replace "ApplicationId\s*=\s*'[^']*'",  "ApplicationId  = '$(APP_ID)'"
+              $Content = $Content -replace "TenantId\s*=\s*'[^']*'",      "TenantId       = '$(TENANT_ID)'"
+              $Content = $Content -replace "TenantDomain\s*=\s*'[^']*'",  "TenantDomain   = '$(TENANT_DOMAIN)'"
+              $Content = $Content -replace "CertificateThumbprint\s*=\s*'[^']*'", "CertificateThumbprint = '$(CERT_THUMBPRINT)'"
+              $Content = $Content -replace "CompanyName\s*=\s*'[^']*'",   "CompanyName = '${{ parameters.clientName }}'"
+              
+              # Inject client-specific trusted IP ranges into ClientSettings
+              if ('$(TRUSTED_IP_RANGES)' -and '$(TRUSTED_IP_RANGES)' -ne '$(TRUSTED_IP_RANGES)') {
+                  $Ranges = ('$(TRUSTED_IP_RANGES)' -split ',').Trim() | ForEach-Object { "'$_'" }
+                  $RangeStr = '@(' + ($Ranges -join ', ') + ')'
+                  $Content = $Content -replace "TrustedIpRanges\s*=\s*@\([^)]*\)", "TrustedIpRanges = $RangeStr"
+              }
+              Set-Content $ConfigPath -Value $Content -Encoding UTF8
+            displayName: 'Inject Credentials into Config'
+
+          - pwsh: |
+              & "$(pipelineRoot)/Scripts/2_Export-Assessment.ps1" `
+                  -ConfigPath "$(pipelineRoot)/Config/M365DSC.Config.psd1" `
+                  -BlueprintPath "$(pipelineRoot)/Blueprints/NCSC_M365_Baseline.ps1"
+            displayName: 'Run NCSC Assessment'
+
+          # Publish reports as pipeline artifacts
+          - publish: '$(pipelineRoot)/Reports'
+            artifact: 'NCSCReports'
+            displayName: 'Publish Gap Report'
+
+          - publish: '$(pipelineRoot)/Exports'
+            artifact: 'TenantExports'
+            displayName: 'Publish Tenant Export'
+
+          - publish: '$(pipelineRoot)/Logs'
+            artifact: 'AssessmentLogs'
+            displayName: 'Publish Logs'
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Stage 3: Remediation (optional – requires parameter)
+  # ═══════════════════════════════════════════════════════════════════════════
+  - stage: Remediate
+    displayName: 'Apply Remediation'
+    dependsOn: Assess
+    condition: and(succeeded(), eq('${{ parameters.mode }}', 'AssessAndRemediate'))
+    jobs:
+      - deployment: ApplyBlueprint
+        displayName: 'Apply NCSC Baseline (CIM/DCOM)'
+        environment: 'M365-Production'         # Requires approval gate in ADO
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - pwsh: |
+                    Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+                    # Use -Scope AllUsers to avoid dual-install CIM errors
+                    $Modules = @('Microsoft365DSC','Microsoft.Graph.Authentication','Microsoft.Graph.Applications','ExchangeOnlineManagement')
+                    foreach ($Mod in $Modules) { Install-Module -Name $Mod -Scope AllUsers -Force -AllowClobber }
+                    $m365Path = (Get-Module Microsoft365DSC -ListAvailable | Select-Object -First 1).ModuleBase
+                    $manifest = Import-PowerShellDataFile "$m365Path\Dependencies\Manifest.psd1"
+                    foreach ($dep in $manifest.Dependencies) { Install-Module -Name $dep.ModuleName -RequiredVersion $dep.RequiredVersion -Force -AllowClobber -Scope AllUsers -ErrorAction SilentlyContinue }
+                    Install-Module PSDesiredStateConfiguration -RequiredVersion 2.0.7 -Force -AllowPrerelease -Scope AllUsers -ErrorAction SilentlyContinue
+                    @('Az.Accounts','Az.ResourceGraph','Az.Resources','Az.Security','Az.SecurityInsights') | ForEach-Object { Install-Module -Name $_ -Force -AllowClobber -Scope AllUsers -ErrorAction SilentlyContinue }
+                  displayName: 'Install PowerShell Modules'
+
+                # Import cert into BOTH stores (LCM/SYSTEM needs LocalMachine\My)
+                - pwsh: |
+                    $PfxBytes = [System.Convert]::FromBase64String('$(CERT_PFX_BASE64)')
+                    $PfxPath  = Join-Path $env:TEMP 'M365DSC-Auth.pfx'
+                    [System.IO.File]::WriteAllBytes($PfxPath, $PfxBytes)
+                    $SecurePass = ConvertTo-SecureString '$(CERT_PASSWORD)' -AsPlainText -Force
+                    Import-PfxCertificate -FilePath $PfxPath -CertStoreLocation 'Cert:\CurrentUser\My' `
+                        -Password $SecurePass | Out-Null
+                    Import-PfxCertificate -FilePath $PfxPath -CertStoreLocation 'Cert:\LocalMachine\My' `
+                        -Password $SecurePass | Out-Null
+                    Remove-Item $PfxPath -Force
+                  displayName: 'Import Auth Certificate (Both Stores)'
+
+                - pwsh: |
+                    $ConfigPath = "$(pipelineRoot)/Config/M365DSC.Config.psd1"
+                    $Content = Get-Content $ConfigPath -Raw
+                    $Content = $Content -replace "ApplicationId\s*=\s*'[^']*'",  "ApplicationId  = '$(APP_ID)'"
+                    $Content = $Content -replace "TenantId\s*=\s*'[^']*'",      "TenantId       = '$(TENANT_ID)'"
+                    $Content = $Content -replace "TenantDomain\s*=\s*'[^']*'",  "TenantDomain   = '$(TENANT_DOMAIN)'"
+                    $Content = $Content -replace "CertificateThumbprint\s*=\s*'[^']*'", "CertificateThumbprint = '$(CERT_THUMBPRINT)'"
+                    
+                    # Inject client-specific trusted IP ranges into ClientSettings
+                    if ('$(TRUSTED_IP_RANGES)' -and '$(TRUSTED_IP_RANGES)' -ne '$(TRUSTED_IP_RANGES)') {
+                        $Ranges = ('$(TRUSTED_IP_RANGES)' -split ',').Trim() | ForEach-Object { "'$_'" }
+                        $RangeStr = '@(' + ($Ranges -join ', ') + ')'
+                        $Content = $Content -replace "TrustedIpRanges\s*=\s*@\([^)]*\)", "TrustedIpRanges = $RangeStr"
+                    }
+                    Set-Content $ConfigPath -Value $Content -Encoding UTF8
+                  displayName: 'Inject Credentials into Config'
+
+                - pwsh: |
+                    # Script v1.1.0 uses CIM/DCOM to push MOF to LCM (no WinRM needed)
+                    # Agent must be running elevated for LCM access
+                    & "$(pipelineRoot)/Scripts/3_Apply-Remediation.ps1" `
+                        -ConfigPath "$(pipelineRoot)/Config/M365DSC.Config.psd1" `
+                        -BlueprintPath "$(pipelineRoot)/Blueprints/NCSC_M365_Baseline.ps1" `
+                        -WhatIf:$false -Force
+                  displayName: 'Apply NCSC Baseline (CIM/DCOM)'
+
+                - publish: '$(pipelineRoot)/Logs'
+                  artifact: 'RemediationLogs'
+                  displayName: 'Publish Remediation Logs'
