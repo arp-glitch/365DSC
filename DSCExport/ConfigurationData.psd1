@@ -13,19 +13,19 @@
     NonNodeData = @(
         @{
             # Azure AD Application Id for Authentication
-            ApplicationId = "a474ef76-a8b5-48bc-8c14-f94aa694782e"
+            ApplicationId = "68f8b6ff-a6bb-4f9b-a1d9-5a998d70f939"
 
             # Thumbprint of the certificate to use for authentication
             CertificateThumbprint = "4082F127F3705C7B20353A548FF1882AA6283631"
 
             # Tenant's default verified domain name
-            OrganizationName = "arnetbiz.onmicrosoft.com"
+            OrganizationName = "samplesandbox.onmicrosoft.com"
 
             # Placeholder for sensitive data - TenantGuid
-            TenantGuid = "b3f0a9b8-5da5-4eac-acff-83059c4bbf17"
+            TenantGuid = "e96b6518-a046-4d95-aee0-64c8c94cf0d8"
 
             # The Id or Name of the tenant to authenticate against
-            TenantId = "arnetbiz.onmicrosoft.com"
+            TenantId = "samplesandbox.onmicrosoft.com"
 
         }
     )
