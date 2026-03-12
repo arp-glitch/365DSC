@@ -39,16 +39,16 @@ No changes are made to the tenant during steps 1–3. This is a **read-only audi
 ## Pipeline Steps at a Glance
 
 ```
-┌───────────────────────────┐     ┌──────────────────────────┐     ┌──────────────────────────────┐
-│  Step 1                   │     │  Step 2                  │     │  Step 3                      │
-│  Setup Service Principal  │────▶│  Export Tenant Config     │────▶│  Gap Analysis vs Blueprint   │
-│  (1_Setup-DSC...ps1)      │     │  (2_DSC-Export.ps1)      │     │  (3_GapAnalysis.ps1)         │
-│                           │     │                          │     │                              │
-│  • App Registration       │     │  • Calls M365DSC Export  │     │  • AST-based DSC parsing     │
-│  • Certificate generation │     │  • Scoped to NCSC        │     │  • Property-level comparison │
-│  • Permission assignment  │     │    workloads              │     │  • HTML + CSV report output  │
-│  • Admin consent          │     │  • Outputs .ps1 file     │     │  • Compliance scoring        │
-└───────────────────────────┘     └──────────────────────────┘     └──────────────────────────────┘
+┌────────────────────────────┐     ┌────────────────────────────────┐     ┌────────────────────────────────┐
+│  Step 1                    │     │  Step 2                        │     │  Step 3                        │
+│  Setup Service Principal   ──────▶ Export Tenant Config          ──────▶  Gap Analysis vs Blueprint     │
+│  (1_Setup-DSC...ps1)       │     │  (2_DSC-Export.ps1)            │     │  (3_GapAnalysis.ps1)           │
+│                            │     │                                │     │                                │
+│  • App Registration        │     │  • Calls M365DSC Export        │     │  • AST-based DSC parsing       │
+│  • Certificate generation  │     │  • Scoped to NCSC              │     │  • Property-level comparison   │
+│  • Permission assignment   │     │    workloads                   │     │  • HTML + CSV report output    │
+│  • Admin consent           │     │  • Outputs .ps1 file           │     │  • Compliance scoring          │
+└────────────────────────────┘     └────────────────────────────────┘     └────────────────────────────────┘
 ```
 
 ---
